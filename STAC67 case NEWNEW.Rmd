@@ -1,0 +1,169 @@
+---
+title: "STAC67 case NEWNEW"
+author: "Ningcan Sun"
+date: "2018???11???24???"
+output: html_document
+---
+```{r}
+library(readr)
+#get the odd rows
+data_1 = read.csv("APPENC05.txt",sep = "", header = FALSE)[c(TRUE, FALSE),]
+colnames(data_1) = c("patient_num","PSA","x1", "x2", "x3", "x4", "x5","x6", "x7")
+#get the even rows
+data_2 = read.csv("APPENC05.txt",sep = "", header = FALSE)[c(FALSE,TRUE),]
+colnames(data_2) = c("patient_num","PSA","x1", "x2", "x3", "x4", "x5","x6", "x7")
+#x5 is qualitative variable
+print (data_1)
+print(data_2)
+```
+
+First we just divide the numbers into two groups, they are odd numbers and even numbers, we let the odd numbers as the build numbers and even number as the valid number. The original number is rank from samll to large, so we can't divide the numbers as the two groups.
+
+
+
+```{r}
+library(tidyverse)
+ggplot(data_1,aes(x=x1,y=PSA))+geom_point()+geom_smooth()
+```
+we can see that the x1 and PSA have some relationship but not linear relationship.
+
+```{r}
+ggplot(data_1,aes(x=x2,y=PSA))+geom_point()+geom_smooth()
+```
+```{r}
+ggplot(data_1,aes(x=x3,y=PSA))+geom_point()+geom_smooth()
+```
+```{r}
+ggplot(data_1,aes(x=x4,y=PSA))+geom_point()+geom_smooth()
+```
+```{r}
+ggplot(data_1,aes(x=x5,y=PSA))+geom_point()
+```
+```{r}
+ggplot(data_1,aes(x=x6,y=PSA))+geom_point()+geom_smooth()
+```
+
+```{r}
+ggplot(data_1,aes(x=x7,y=PSA))+geom_point()
+```
+
+we delet the variable that as the x increase, the true mean y don't doesn't have significant change.
+So, finally, we design to do build a polynomial model containing x1(cancer volume),x5(seminal vesicle invasion),x6(capsular penetration),x7(Gleason score). 
+
+
+```{r}
+full_model=lm(PSA~x1+x5+x6+x7+I(x1^2)+I(x5^2)+I(x6^2)+I(x7^2)+I(x1*x5)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+first we don't add log, we can see the graph of the residual, we can see that the variance is not almost equal. (((((The pattern tht is not random suggests non-linearity.)))))))!!!!!?????
+
+
+```{r}
+full_model=lm(log(PSA)~x1+x5+x6+x7+I(x1^2)+I(x6^2)+I(x7^2)+I(x1*x5)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+we transform PSA into log(PSA) to make the error more normal,
+
+
+????????!!!!!!!!!!!!!!!!!!!!
+'''library(MASS)
+layout(matrix(c(1,2,3,4),2,2))
+plot(full_model)
+step = stepAIC(full_model, direction = "both")
+print("=============================================================")
+step$anova # display results
+'''
+!!!!!!!!????????????!!!!!
+
+
+```{r}
+full_model=lm(log(PSA)~x1+x5+x6+x7+I(x1^2)+I(x7^2)+I(x1*x5)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+#remove I(x6^2) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+```{r}
+full_model=lm(log(PSA)~x1+x5+x6+x7+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+#remove I(x1*x5) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+
+```{r}
+full_model=lm(log(PSA)~x1+x5+x7+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+#remove x6 because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+```{r}
+full_model=lm(log(PSA)~x1+x7+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7)+I(x6*x7),data=data_1)
+#remove x5 because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+```{r}
+full_model=lm(log(PSA)~x1+x7+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7),data=data_1)
+#remove I(x6*x7) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+```{r}
+full_model=lm(log(PSA)~x1+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6)+I(x5*x7),data=data_1)
+#remove x7 because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+```{r}
+full_model=lm(log(PSA)~x1+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7)+I(x5*x6),data=data_1)
+#remove I(x5*x7) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+```{r}
+full_model=lm(log(PSA)~x1+I(x1^2)+I(x7^2)+I(x1*x6)+I(x1*x7),data=data_1)
+#remove I(x5*x6) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+```{r}
+full_model=lm(log(PSA)~x1+I(x7^2)+I(x1*x6)+I(x1*x7),data=data_1)
+#remove I(x1^2) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+```{r}
+full_model=lm(log(PSA)~x1+I(x7^2)+I(x1*x7),data=data_1)
+#remove I(x1*x6) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+
+```{r}
+full_model=lm(log(PSA)~x1+I(x7^2),data=data_1)
+#remove I(x1*x7) because the P-value is the biggest
+summary(full_model)
+#par(mfrow=c(2,2))
+plot(full_model)
+```
+
+
